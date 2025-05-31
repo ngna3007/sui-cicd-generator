@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Sui Move CI/CD Generator
 
 A dynamic CI/CD configuration generator for Sui Move smart contract projects. This tool automatically generates GitHub Actions workflows tailored to your Sui blockchain project needs.
