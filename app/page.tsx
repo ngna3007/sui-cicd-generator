@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Download, Settings, Code, GitBranch, Copy, Check } from 'lucide-react';
+import { Download, Settings, Code, GitBranch, Copy, Check, FileSearch } from 'lucide-react';
+import CIPipelineAnalyzer from './components/CIPipelineAnalyzer';
 
 interface Config {
   projectName: string;
@@ -54,6 +55,7 @@ const GitHubPipelineGenerator = () => {
 
   const [generatedYaml, setGeneratedYaml] = useState('');
   const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<'generator' | 'analyzer'>('generator');
 
   const projectTypes = {
     sui: { name: 'Sui Move', icon: '💧' },
@@ -833,280 +835,320 @@ const GitHubPipelineGenerator = () => {
           <p className="text-gray-300 text-lg">Create custom CI/CD workflows for your projects</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Configuration Panel */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
-            <div className="flex items-center mb-6">
-              <Settings className="w-6 h-6 text-blue-400 mr-2" />
-              <h2 className="text-2xl font-semibold text-white">Configuration</h2>
-            </div>
-
-            <div className="space-y-6">
-              {/* Basic Settings */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-blue-300">Project Settings</h3>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Project Name</label>
-                  <input
-                    type="text"
-                    value={config.projectName}
-                    onChange={(e) => handleConfigChange('projectName', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Project Type</label>
-                  <select
-                    value={config.projectType}
-                    onChange={(e) => handleConfigChange('projectType', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
-                  >
-                    {Object.entries(projectTypes).map(([key, value]) => (
-                      <option key={key} value={key}>{value.icon} {value.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Package Manager</label>
-                  <select
-                    value={config.packageManager}
-                    onChange={(e) => handleConfigChange('packageManager', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
-                  >
-                    {packageManagers[config.projectType as keyof typeof packageManagers]?.map((pm: string) => (
-                      <option key={pm} value={pm}>{pm}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Branches (comma-separated)</label>
-                  <input
-                    type="text"
-                    value={config.branches}
-                    onChange={(e) => handleConfigChange('branches', e.target.value)}
-                    placeholder="main,develop,staging"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Pipeline Stages */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-blue-300">Pipeline Stages</h3>
-                
-                {Object.entries(config.stages).map(([stage, enabled]) => (
-                  <label key={stage} className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={enabled}
-                      onChange={(e) => handleConfigChange(`stages.${stage}`, e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-gray-300 capitalize">{stage}</span>
-                  </label>
-                ))}
-              </div>
-
-              {/* Advanced Options */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-blue-300">Advanced Options</h3>
-                
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={config.dockerize}
-                    onChange={(e) => handleConfigChange('dockerize', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-300">Docker Support</span>
-                </label>
-
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={config.caching}
-                    onChange={(e) => handleConfigChange('caching', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-300">Enable Caching</span>
-                </label>
-
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={config.parallelJobs}
-                    onChange={(e) => handleConfigChange('parallelJobs', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-300">Parallel Jobs</span>
-                </label>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Environment Variables</label>
-                  <input
-                    type="text"
-                    value={config.envVars}
-                    onChange={(e) => handleConfigChange('envVars', e.target.value)}
-                    placeholder="NODE_ENV,API_KEY,DATABASE_URL"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Deployment Targets</label>
-                  {config.projectType === 'sui' ? (
-                    <select
-                      value={config.deploymentTargets}
-                      onChange={(e) => handleConfigChange('deploymentTargets', e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="devnet">Devnet</option>
-                      <option value="testnet">Testnet</option>
-                      <option value="devnet,testnet">Both (Devnet + Testnet)</option>
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={config.deploymentTargets}
-                      onChange={(e) => handleConfigChange('deploymentTargets', e.target.value)}
-                      placeholder="staging,production"
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Generated YAML */}
-          <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <Code className="w-6 h-6 text-green-400 mr-2" />
-                <h2 className="text-2xl font-semibold text-white">Generated Workflow</h2>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={copyToClipboard}
-                  className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-                <button
-                  onClick={downloadYaml}
-                  className="flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                >
-                  <Download className="w-4 h-4 mr-1" />
-                  Download
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-gray-900 rounded-lg p-4 h-96 overflow-y-auto">
-              <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-                {generatedYaml}
-              </pre>
-            </div>
-
-            <div className="mt-4 p-4 bg-blue-900 rounded-lg">
-              <h3 className="text-white font-medium mb-2">📁 Save as:</h3>
-              <code className="text-blue-200 text-sm">.github/workflows/ci-cd.yml</code>
-              <p className="text-blue-200 text-sm mt-2">
-                Save this file in your repository&apos;s <code>.github/workflows/</code> directory to activate the pipeline.
-              </p>
-            </div>
-
-            {/* Sui-specific setup guide */}
-            {config.projectType === 'sui' && config.stages.deploy && (
-              <div className="mt-4 p-4 bg-purple-900 rounded-lg">
-                <h3 className="text-white font-medium mb-3">🟦 Sui Deployment Setup Guide</h3>
-                
-                <div className="space-y-4 text-sm">
-                  <div>
-                    <h4 className="text-purple-200 font-medium mb-2">📋 Required GitHub Repository Secrets</h4>
-                    <p className="text-purple-100 mb-3">
-                      To enable Sui deployment, add these secrets to your GitHub repository:
-                    </p>
-                    
-                    <div className="space-y-3">
-                      <div className="bg-purple-800 p-3 rounded">
-                        <code className="text-yellow-300 font-mono">SUI_CONFIG</code>
-                        <p className="text-purple-100 mt-1">Your Sui wallet configuration file content</p>
-                        <p className="text-purple-200 text-xs mt-1">
-                          Usually found at: <code className="bg-purple-800 px-1 rounded">~/.sui/sui_config/client.yaml</code>
-                        </p>
-                      </div>
-                      
-                      <div className="bg-purple-800 p-3 rounded">
-                        <code className="text-yellow-300 font-mono">SUI_KEYSTORE</code>
-                        <p className="text-purple-100 mt-1">Your Sui keystore file content</p>
-                        <p className="text-purple-200 text-xs mt-1">
-                          Usually found at: <code className="bg-purple-800 px-1 rounded">~/.sui/sui_config/sui.keystore</code>
-                        </p>
-                      </div>
-                      
-                      <div className="bg-purple-800 p-3 rounded">
-                        <code className="text-yellow-300 font-mono">SUI_ALIASES</code>
-                        <p className="text-purple-100 mt-1">Your Sui aliases file content</p>
-                        <p className="text-purple-200 text-xs mt-1">
-                          Usually found at: <code className="bg-purple-800 px-1 rounded">~/.sui/sui_config/sui.aliases</code>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-purple-700 pt-4">
-                    <h4 className="text-purple-200 font-medium mb-2">🔧 How to Add Secrets to GitHub</h4>
-                    <ol className="list-decimal list-inside space-y-2 text-purple-100">
-                      <li>Go to your GitHub repository</li>
-                      <li>Click <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong></li>
-                      <li>Click <strong>New repository secret</strong></li>
-                      <li>Add each secret with the exact names above</li>
-                      <li>Copy the file contents (not the file paths) as secret values</li>
-                    </ol>
-                  </div>
-
-                  <div className="border-t border-purple-700 pt-4">
-                    <h4 className="text-purple-200 font-medium mb-2">💡 Setup Tips</h4>
-                    <div className="space-y-2 text-purple-100">
-                      <div className="flex items-start space-x-2">
-                        <span className="text-yellow-300">•</span>
-                        <span>First time setup? Run <code className="bg-purple-800 px-1 rounded">sui client</code> locally to generate config files</span>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <span className="text-yellow-300">•</span>
-                        <span>Fund your wallet with devnet SUI tokens from the <a href="https://discord.com/channels/916379725201563759/971488439931392130" className="text-blue-300 underline" target="_blank" rel="noopener noreferrer">Discord faucet</a></span>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <span className="text-yellow-300">•</span>
-                        <span>Test your configuration locally with <code className="bg-purple-800 px-1 rounded">sui client active-address</code></span>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <span className="text-yellow-300">•</span>
-                        <span>The CI will automatically handle gas and address management</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-amber-900 border border-amber-700 p-3 rounded mt-4">
-                    <h4 className="text-amber-200 font-medium flex items-center mb-2">
-                      ⚠️ Security Note
-                    </h4>
-                    <p className="text-amber-100 text-xs">
-                      Never commit wallet files or private keys to your repository. 
-                      Always use GitHub secrets for sensitive configuration data.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <div className="border-b border-gray-700">
+            <nav className="flex space-x-8">
+              <button
+                onClick={() => setActiveTab('generator')}
+                className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'generator'
+                    ? 'border-blue-400 text-blue-400'
+                    : 'border-transparent text-gray-300 hover:text-gray-100'
+                }`}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Workflow Generator
+              </button>
+              <button
+                onClick={() => setActiveTab('analyzer')}
+                className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'analyzer'
+                    ? 'border-blue-400 text-blue-400'
+                    : 'border-transparent text-gray-300 hover:text-gray-100'
+                }`}
+              >
+                <FileSearch className="w-4 h-4 mr-2" />
+                Pipeline Analyzer
+              </button>
+            </nav>
           </div>
         </div>
+
+        {/* Tab Content */}
+        {activeTab === 'generator' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Configuration Panel */}
+            <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
+              <div className="flex items-center mb-6">
+                <Settings className="w-6 h-6 text-blue-400 mr-2" />
+                <h2 className="text-2xl font-semibold text-white">Configuration</h2>
+              </div>
+
+              <div className="space-y-6">
+                {/* Basic Settings */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-blue-300">Project Settings</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Project Name</label>
+                    <input
+                      type="text"
+                      value={config.projectName}
+                      onChange={(e) => handleConfigChange('projectName', e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Project Type</label>
+                    <select
+                      value={config.projectType}
+                      onChange={(e) => handleConfigChange('projectType', e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+                    >
+                      {Object.entries(projectTypes).map(([key, value]) => (
+                        <option key={key} value={key}>{value.icon} {value.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Package Manager</label>
+                    <select
+                      value={config.packageManager}
+                      onChange={(e) => handleConfigChange('packageManager', e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+                    >
+                      {packageManagers[config.projectType as keyof typeof packageManagers]?.map((pm: string) => (
+                        <option key={pm} value={pm}>{pm}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Branches (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={config.branches}
+                      onChange={(e) => handleConfigChange('branches', e.target.value)}
+                      placeholder="main,develop,staging"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Pipeline Stages */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-blue-300">Pipeline Stages</h3>
+                  
+                  {Object.entries(config.stages).map(([stage, enabled]) => (
+                    <label key={stage} className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={enabled}
+                        onChange={(e) => handleConfigChange(`stages.${stage}`, e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-gray-300 capitalize">{stage}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Advanced Options */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-blue-300">Advanced Options</h3>
+                  
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={config.dockerize}
+                      onChange={(e) => handleConfigChange('dockerize', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-gray-300">Docker Support</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={config.caching}
+                      onChange={(e) => handleConfigChange('caching', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-gray-300">Enable Caching</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={config.parallelJobs}
+                      onChange={(e) => handleConfigChange('parallelJobs', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-gray-300">Parallel Jobs</span>
+                  </label>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Environment Variables</label>
+                    <input
+                      type="text"
+                      value={config.envVars}
+                      onChange={(e) => handleConfigChange('envVars', e.target.value)}
+                      placeholder="NODE_ENV,API_KEY,DATABASE_URL"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Deployment Targets</label>
+                    {config.projectType === 'sui' ? (
+                      <select
+                        value={config.deploymentTargets}
+                        onChange={(e) => handleConfigChange('deploymentTargets', e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="devnet">Devnet</option>
+                        <option value="testnet">Testnet</option>
+                        <option value="devnet,testnet">Both (Devnet + Testnet)</option>
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={config.deploymentTargets}
+                        onChange={(e) => handleConfigChange('deploymentTargets', e.target.value)}
+                        placeholder="staging,production"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Generated YAML */}
+            <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <Code className="w-6 h-6 text-green-400 mr-2" />
+                  <h2 className="text-2xl font-semibold text-white">Generated Workflow</h2>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={copyToClipboard}
+                    className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                  <button
+                    onClick={downloadYaml}
+                    className="flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    Download
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-gray-900 rounded-lg p-4 h-96 overflow-y-auto">
+                <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
+                  {generatedYaml}
+                </pre>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-900 rounded-lg">
+                <h3 className="text-white font-medium mb-2">📁 Save as:</h3>
+                <code className="text-blue-200 text-sm">.github/workflows/ci-cd.yml</code>
+                <p className="text-blue-200 text-sm mt-2">
+                  Save this file in your repository&apos;s <code>.github/workflows/</code> directory to activate the pipeline.
+                </p>
+              </div>
+
+              {/* Sui-specific setup guide */}
+              {config.projectType === 'sui' && config.stages.deploy && (
+                <div className="mt-4 p-4 bg-purple-900 rounded-lg">
+                  <h3 className="text-white font-medium mb-3">🟦 Sui Deployment Setup Guide</h3>
+                  
+                  <div className="space-y-4 text-sm">
+                    <div>
+                      <h4 className="text-purple-200 font-medium mb-2">📋 Required GitHub Repository Secrets</h4>
+                      <p className="text-purple-100 mb-3">
+                        To enable Sui deployment, add these secrets to your GitHub repository:
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div className="bg-purple-800 p-3 rounded">
+                          <code className="text-yellow-300 font-mono">SUI_CONFIG</code>
+                          <p className="text-purple-100 mt-1">Your Sui wallet configuration file content</p>
+                          <p className="text-purple-200 text-xs mt-1">
+                            Usually found at: <code className="bg-purple-800 px-1 rounded">~/.sui/sui_config/client.yaml</code>
+                          </p>
+                        </div>
+                        
+                        <div className="bg-purple-800 p-3 rounded">
+                          <code className="text-yellow-300 font-mono">SUI_KEYSTORE</code>
+                          <p className="text-purple-100 mt-1">Your Sui keystore file content</p>
+                          <p className="text-purple-200 text-xs mt-1">
+                            Usually found at: <code className="bg-purple-800 px-1 rounded">~/.sui/sui_config/sui.keystore</code>
+                          </p>
+                        </div>
+                        
+                        <div className="bg-purple-800 p-3 rounded">
+                          <code className="text-yellow-300 font-mono">SUI_ALIASES</code>
+                          <p className="text-purple-100 mt-1">Your Sui aliases file content</p>
+                          <p className="text-purple-200 text-xs mt-1">
+                            Usually found at: <code className="bg-purple-800 px-1 rounded">~/.sui/sui_config/sui.aliases</code>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-purple-700 pt-4">
+                      <h4 className="text-purple-200 font-medium mb-2">🔧 How to Add Secrets to GitHub</h4>
+                      <ol className="list-decimal list-inside space-y-2 text-purple-100">
+                        <li>Go to your GitHub repository</li>
+                        <li>Click <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong></li>
+                        <li>Click <strong>New repository secret</strong></li>
+                        <li>Add each secret with the exact names above</li>
+                        <li>Copy the file contents (not the file paths) as secret values</li>
+                      </ol>
+                    </div>
+
+                    <div className="border-t border-purple-700 pt-4">
+                      <h4 className="text-purple-200 font-medium mb-2">💡 Setup Tips</h4>
+                      <div className="space-y-2 text-purple-100">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-yellow-300">•</span>
+                          <span>First time setup? Run <code className="bg-purple-800 px-1 rounded">sui client</code> locally to generate config files</span>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <span className="text-yellow-300">•</span>
+                          <span>Fund your wallet with devnet SUI tokens from the <a href="https://discord.com/channels/916379725201563759/971488439931392130" className="text-blue-300 underline" target="_blank" rel="noopener noreferrer">Discord faucet</a></span>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <span className="text-yellow-300">•</span>
+                          <span>Test your configuration locally with <code className="bg-purple-800 px-1 rounded">sui client active-address</code></span>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <span className="text-yellow-300">•</span>
+                          <span>The CI will automatically handle gas and address management</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-900 border border-amber-700 p-3 rounded mt-4">
+                      <h4 className="text-amber-200 font-medium flex items-center mb-2">
+                        ⚠️ Security Note
+                      </h4>
+                      <p className="text-amber-100 text-xs">
+                        Never commit wallet files or private keys to your repository. 
+                        Always use GitHub secrets for sensitive configuration data.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Pipeline Analyzer Tab */}
+        {activeTab === 'analyzer' && (
+          <div className="bg-gray-800 rounded-lg p-6 shadow-xl">
+            <CIPipelineAnalyzer />
+          </div>
+        )}
       </div>
     </div>
   );

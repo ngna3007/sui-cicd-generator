@@ -1,8 +1,15 @@
 @import "tailwindcss";
+@import 'reactflow/dist/style.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
 }
 
 @theme inline {
@@ -16,6 +23,9 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
   }
 }
 
@@ -23,4 +33,83 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+/* ReactFlow custom styles */
+.react-flow__node {
+  @apply font-sans;
+}
+
+.react-flow__node-input,
+.react-flow__node-output {
+  @apply bg-gray-200 text-gray-800;
+}
+
+.react-flow__controls {
+  @apply bg-white rounded-lg shadow-lg;
+}
+
+.react-flow__controls button {
+  @apply bg-white text-gray-700 border-gray-300 hover:bg-gray-50;
+}
+
+.react-flow__minimap {
+  @apply bg-white border border-gray-200 rounded-lg;
+}
+
+.react-flow__attribution {
+  @apply bg-transparent text-gray-400 text-xs;
+}
+
+/* Dark mode styles for ReactFlow */
+@media (prefers-color-scheme: dark) {
+  .react-flow__controls {
+    @apply bg-gray-800 border-gray-700;
+  }
+  
+  .react-flow__controls button {
+    @apply bg-gray-800 text-gray-200 border-gray-600 hover:bg-gray-700;
+  }
+  
+  .react-flow__minimap {
+    @apply bg-gray-800 border-gray-700;
+  }
+}
+
+/* Custom pipeline node styles */
+.pipeline-node {
+  @apply rounded-lg border-2 shadow-lg min-w-[200px] transition-all duration-200;
+}
+
+.pipeline-node:hover {
+  @apply shadow-xl scale-105;
+}
+
+.pipeline-node-header {
+  @apply bg-gray-800 text-white px-3 py-2 rounded-t-md;
+}
+
+.pipeline-node-content {
+  @apply p-3 space-y-2;
+}
+
+/* Animation for parallel job indicators */
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: rgb(34, 197, 94);
+  }
+  50% {
+    border-color: rgb(74, 222, 128);
+  }
+}
+
+.parallel-indicator {
+  animation: pulse-border 2s ease-in-out infinite;
 }
