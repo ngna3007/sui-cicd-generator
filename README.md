@@ -10,7 +10,7 @@ A modern, interactive web application for generating custom GitHub Actions CI/CD
 
 Demo video for Sui CI/CD workflow:
 
-[![Watch the video](https://img.youtube.com/vi/mvnCFVYAkF0/maxresdefault.jpg)](https://youtu.be/mvnCFVYAkF0)
+https://github.com/user-attachments/assets/dd9aad03-ca46-4ce3-a87f-89d183f91b06
 
 ## ✨ Features
 
