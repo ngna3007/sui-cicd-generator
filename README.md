@@ -8,6 +8,10 @@
 
 A modern, interactive web application for generating custom GitHub Actions CI/CD workflows tailored to your project needs. **Specially optimized for Sui Move smart contract projects** with comprehensive blockchain deployment capabilities.
 
+Demo video for Sui CI/CD workflow:
+
+[![Watch the video](https://img.youtube.com/vi/mvnCFVYAkF0/maxresdefault.jpg)](https://youtu.be/mvnCFVYAkF0)
+
 ## ✨ Features
 
 ### 🎯 **Universal Project Support**
