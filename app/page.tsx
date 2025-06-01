@@ -1,10 +1,34 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Download, Play, Settings, Code, GitBranch, Copy, Check } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Download, Settings, Code, GitBranch, Copy, Check } from 'lucide-react';
+
+interface Config {
+  projectName: string;
+  projectType: string;
+  branches: string;
+  nodeVersion: string;
+  packageManager: string;
+  stages: {
+    lint: boolean;
+    test: boolean;
+    build: boolean;
+    security: boolean;
+    deploy: boolean;
+  };
+  deploymentTargets: string;
+  dockerize: boolean;
+  caching: boolean;
+  notifications: boolean;
+  parallelJobs: boolean;
+  envVars: string;
+  testCommand: string;
+  buildCommand: string;
+  deployScript: string;
+}
 
 const GitHubPipelineGenerator = () => {
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<Config>({
     projectName: 'my-project',
     projectType: 'sui',
     branches: 'main,develop',
@@ -51,7 +75,7 @@ const GitHubPipelineGenerator = () => {
     dotnet: ['dotnet']
   };
 
-  const generateWorkflow = () => {
+  const generateWorkflow = useCallback(() => {
     const branches = config.branches.split(',').map(b => b.trim()).filter(b => b);
     const deployTargets = config.deploymentTargets.split(',').map(t => t.trim()).filter(t => t);
     const envVarsList = config.envVars.split(',').map(v => v.trim()).filter(v => v);
@@ -507,19 +531,19 @@ const GitHubPipelineGenerator = () => {
     }
 
     return workflow;
-  };
+  }, [config]);
 
   useEffect(() => {
     setGeneratedYaml(generateWorkflow());
-  }, [config]);
+  }, [generateWorkflow]);
 
-  const handleConfigChange = (field: string, value: any) => {
+  const handleConfigChange = (field: string, value: string | boolean) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setConfig(prev => ({
         ...prev,
         [parent]: {
-          ...(prev as any)[parent],
+          ...(prev[parent as keyof Config] as Record<string, boolean>),
           [child]: value
         }
       }));
@@ -745,7 +769,7 @@ const GitHubPipelineGenerator = () => {
               <h3 className="text-white font-medium mb-2">📁 Save as:</h3>
               <code className="text-blue-200 text-sm">.github/workflows/ci-cd.yml</code>
               <p className="text-blue-200 text-sm mt-2">
-                Save this file in your repository's <code>.github/workflows/</code> directory to activate the pipeline.
+                Save this file in your repository&apos;s <code>.github/workflows/</code> directory to activate the pipeline.
               </p>
             </div>
 
